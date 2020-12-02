@@ -8,24 +8,23 @@ import 'graphiql/graphiql.css';
 
 
 const GraphiQLExample = () => {
-  return (
-    <Styles.GraphiQLExample>
-      <div>GraphiQLExample ?????????</div>
-      <GraphiQL
-        fetcher={async (graphQLParams) => {
-          const data = await fetch('https://rickandmortyapi.com/graphql', {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(graphQLParams),
-          });
-          return data.json().catch(() => data.text());
-        }}
-      />
-    </Styles.GraphiQLExample>
-  );
+	return (
+		<Styles.GraphiQLExample>
+			<GraphiQL
+				fetcher={async (graphQLParams) => {
+					const data = await fetch('https://rickandmortyapi.com/graphql', {
+						method: 'POST',
+						headers: {
+							Accept: 'application/json',
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(graphQLParams),
+					});
+					return data.json().catch(() => data.text());
+				}}
+			/>
+		</Styles.GraphiQLExample>
+	);
 };
 
 export default GraphiQLExample;

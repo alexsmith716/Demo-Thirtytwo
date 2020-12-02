@@ -79,30 +79,19 @@ const render = async () => {
 	};
 
 	const hydrate = (hydrateRoutes) => {
-    const element = (
-      <HelmetProvider>
-        <Provider store={store}>
-          <Router history={history}>
-            <RouterTrigger triggerProp={(pathname) => triggerHooks(hydrateRoutes, pathname)}>
-              {renderRoutes(hydrateRoutes)}
-            </RouterTrigger>
-          </Router>
-        </Provider>
-      </HelmetProvider>
-    );
-    //  const element = (
-    //  	<HelmetProvider>
-    //  		<Provider store={store}>
-    //  			<Router history={history}>
-    //  				<ThemeContext>
-    //  					<RouterTrigger triggerProp={(pathname) => triggerHooks(hydrateRoutes, pathname)}>
-    //  						{renderRoutes(hydrateRoutes)}
-    //  					</RouterTrigger>
-    //  				</ThemeContext>
-    //  			</Router>
-    //  		</Provider>
-    //  	</HelmetProvider>
-    //  );
+		const element = (
+			<HelmetProvider>
+				<Provider store={store}>
+					<Router history={history}>
+						<ThemeContext>
+							<RouterTrigger triggerProp={(pathname) => triggerHooks(hydrateRoutes, pathname)}>
+								{renderRoutes(hydrateRoutes)}
+							</RouterTrigger>
+						</ThemeContext>
+					</Router>
+				</Provider>
+			</HelmetProvider>
+		);
 
 
 		if (dest && dest.innerHTML !== "") {

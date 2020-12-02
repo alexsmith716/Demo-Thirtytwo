@@ -6,7 +6,7 @@ import { Router, StaticRouter } from 'react-router';
 import { createMemoryHistory } from 'history';
 import { renderRoutes } from 'react-router-config';
 import { HelmetProvider } from 'react-helmet-async';
-import { ChunkExtractor, ChunkExtractorManager } from '@loadable/server';
+import { ChunkExtractor } from '@loadable/server';
 import { ServerStyleSheet } from 'styled-components';
 import fetch from 'node-fetch';
 import { resolvers } from '../graphql/resolvers/resolvers.js';
@@ -27,16 +27,6 @@ import { getDataFromTree, getMarkupFromTree } from '@apollo/client/react/ssr';
 // -------------------------------------------------------------------
 
 export async function get(req, res) {
-	req.counterPreloadedState = Math.floor(Math.random() * (100 - 1)) + 1;
-	req.userAgent = getUserAgent(req.headers['user-agent']);
-	req.isBot = isBot(req.headers['user-agent']);
-
-	// =====================================================
-
-	// const statsFile = path.resolve(__dirname,'../../client/loadable-stats.json');
-
-	// =====================================================
-
 	const history = createMemoryHistory({ initialEntries: [req.originalUrl] });
 
 	const preloadedState = initialStatePreloaded(req);
@@ -62,49 +52,48 @@ export async function get(req, res) {
 
 	const sheet = new ServerStyleSheet();
 
-	//  const httpLink = createHttpLink({
-	//    uri: 'http://localhost:4000/graphql',
-	//    // fetch: customFetch,
-	//    fetch: fetch,
-	//  });
+	const httpLink = createHttpLink({
+		uri: 'http://localhost:4000/graphql',
+		// fetch: customFetch,
+		fetch: fetch,
+	});
 
-	//  const cache = new InMemoryCache();
+	const cache = new InMemoryCache();
 
-	//  const errorLink = onError(({ graphQLErrors, networkError }) => {
-	//    if (graphQLErrors && graphQLErrors?.length > 0) {
-	//      //  catchError((e) => handleError(e))
-	//      graphQLErrors.map(({ message, locations, path }) =>
-	//        console.log(
-	//          `>>>> SERVER > [GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
-	//        ),
-	//      );
-	//    }
+	const errorLink = onError(({ graphQLErrors, networkError }) => {
+		if (graphQLErrors && graphQLErrors?.length > 0) {
+			//  catchError((e) => handleError(e))
+			graphQLErrors.map(({ message, locations, path }) =>
+				console.log(
+					`>>>> SERVER > [GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+				),
+			);
+		}
 
-	//    if (networkError) {
-	//      console.log(`>>>> SERVER > [Network error!!!!!]: ${networkError}`);
-	//    }
-	//  });
+		if (networkError) {
+			console.log(`>>>> SERVER > [Network error!!!!!]: ${networkError}`);
+		}
+	});
 
-	//  const link = ApolloLink.from([
-	//    errorLink,
-	//    httpLink,
-	//  ]);
+	const link = ApolloLink.from([
+		errorLink,
+		httpLink,
+	]);
 
-	//  const clientApollo = new ApolloClient({
-	//    ssrMode: true,
-	//    cache,
-	//    link,
-	//    resolvers,
-	//  });
+	const clientApollo = new ApolloClient({
+		ssrMode: true,
+		cache,
+		link,
+		resolvers,
+	});
 
 	// =====================================================
 	const nodeStats = path.resolve(__dirname,'../../public/dist/node/loadable-stats.json');
 	const webStats = path.resolve(__dirname,'../../public/dist/web/loadable-stats.json');
 
 	const nodeExtractor = new ChunkExtractor({ statsFile: nodeStats })
-	const { default: App } = nodeExtractor.requireEntrypoint('main');
-
-	const webExtractor = new ChunkExtractor({ statsFile: webStats });
+	const { default: AppX } = nodeExtractor.requireEntrypoint('main');
+	//	const webExtractor = new ChunkExtractor({ statsFile: webStats });
 	//  // =====================================================
 
 	//  // =====================================================
@@ -128,38 +117,38 @@ export async function get(req, res) {
 	await asyncGetPromises(routes, req.path, store);
 
 	try {
-		// console.log('>>>> SERVER > InMemoryCache > CACHE > cache.extract() 1: ', cache.extract());
+		console.log('>>>> SERVER > InMemoryCache > CACHE > cache.extract() 1: ', cache.extract());
 
 		// ==========================================================================
 
-		//  clientApollo.writeQuery({
-		//    query: gql`
-		//      query GetCartItems {
-		//        cartItems
-		//      }
-		//    `,
-		//    data: {
-		//      cartItems: ['itemAA', 'itemBB', 'itemCC'],
-		//    },
-		//  });
+		clientApollo.writeQuery({
+			query: gql`
+				query GetCartItems {
+					cartItems
+				}
+			`,
+			data: {
+				cartItems: ['itemAA', 'itemBB', 'itemCC'],
+			},
+		});
 
-		// console.log('>>>> SERVER > InMemoryCache > CACHE > cache.extract() 2: ', cache.extract());
+		console.log('>>>> SERVER > InMemoryCache > CACHE > cache.extract() 2: ', cache.extract());
 
 		const helmetContext = {};
 		const context = {};
 
-		const element = (
-			<ChunkExtractorManager extractor={nodeExtractor}>
-				<HelmetProvider context={helmetContext}>
-						<Provider store={store}>
-							<Router history={history}>
-								<StaticRouter location={req.originalUrl} context={context}>
-									React.createElement(App)
-								</StaticRouter>
-							</Router>
-						</Provider>
-				</HelmetProvider>
-			</ChunkExtractorManager>
+		const App = () => (
+			<HelmetProvider context={helmetContext}>
+				<ApolloProvider client={clientApollo}>
+					<Provider store={store}>
+						<Router history={history}>
+							<StaticRouter location={req.originalUrl} context={context}>
+								React.createElement(AppX)
+							</StaticRouter>
+						</Router>
+					</Provider>
+				</ApolloProvider>
+			</HelmetProvider>
 		);
 
 		// -------------------------------------------------------------------
@@ -176,41 +165,45 @@ export async function get(req, res) {
 		}
 
 		// =====================================================
-		//  const extractorZ = new ChunkExtractor({ statsFile: webStats });
+		const extractorZ = new ChunkExtractor({ statsFile: webStats });
 		// =====================================================
 
 		// =====================================================
 		// LOADABLE-COMPONENTS 
-		// const content = renderToString(extractor.collectChunks(<App />))
+		// const tree = renderToString(extractor.collectChunks(<App />))
 		// const tree = extractor.collectChunks(appX)
+		const tree = extractorZ.collectChunks(<App />)
 		// =====================================================
 
 		// =====================================================
 		//  @apollo/client/react/ssr
 		//  await GraphQL data coming from the API server
-		//  await getDataFromTree(tree);
+		await getDataFromTree(tree);
 		//  await Promise.all([getDataFromTree(tree)]);
 		//  await Promise.all([getMarkupFromTree({tree, renderFunction: renderToStaticMarkup})]);
 		// =====================================================
 
 		// =====================================================
 		// STYLED-COMPONENTS 
-		const content = renderToString(element);
+		// const content = renderToString(element);
+		const content = renderToString(sheet.collectStyles(tree));
 		// =====================================================
 
 		// =====================================================
-		const linkElementsZ = webExtractor.getLinkElements();
-		const styleElementsZ = webExtractor.getStyleElements();
-		const scriptElementsZ = webExtractor.getScriptElements();
+		const linkElementsZ = extractorZ.getLinkElements();
+		const styleElementsZ = extractorZ.getStyleElements();
+		const scriptElementsZ = extractorZ.getScriptElements();
 		// =====================================================
 
 		// =====================================================
-		// STYLED-COMPONENTS 
+		// STYLED-COMPONENTS
+		const styledComponents = sheet.getStyleElement();
 		// =====================================================
 
 		// =====================================================
 		// LOADABLE-COMPONENTS 
 		const storeState = JSON.stringify(store.getState());
+		const graphqlState = JSON.stringify(clientApollo.extract());
 		// =====================================================
 
 		const html = (
@@ -220,6 +213,8 @@ export async function get(req, res) {
 				scriptElements={scriptElementsZ}
 				store={storeState}
 				content={content}
+				styledComponents={styledComponents}
+				graphqlState={graphqlState}
 			/>
 		);
 
