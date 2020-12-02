@@ -9,6 +9,8 @@ type Props = {
 	scriptElements: React.ReactElement[];
 	store: string;
 	content: string;
+	styledComponents: React.ReactElement[];
+	graphqlState: string;
 };
 
 const Html: React.FC<Props> = ({
@@ -17,6 +19,8 @@ const Html: React.FC<Props> = ({
 	scriptElements,
 	store,
 	content,
+	styledComponents,
+	graphqlState,
 }) => {
 
 	return (
@@ -38,6 +42,11 @@ const Html: React.FC<Props> = ({
 				{/* (>>>>>>> LinkElements <<<<<<<<<<<<<<<<<<<<<<<<<<<<<) */}
 				{linkElements}
 
+				{/* (>>>>>>> styled-components <<<<<<<<<<<<<<<<<<<<<<<<<<<<<) */}
+				{styledComponents}
+
+				{/* (>>>>>>> StyleElements <<<<<<<<<<<<<<<<<<<<<<<<<<<<<) */}
+				{styleElements}
 			</head>
 
 			<body>
@@ -49,6 +58,16 @@ const Html: React.FC<Props> = ({
 					<script
 						dangerouslySetInnerHTML={{
 							__html: `window.__PRELOADED__=true;window.REDUX_DATA=${store};`,
+						}}
+						charSet="UTF-8"
+					/>
+				)}
+
+				{/* (>>>>>>> GRAPHQL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<) */}
+				{graphqlState && (
+					<script
+						dangerouslySetInnerHTML={{
+							__html: `window.__APOLLO_STATE__=${graphqlState};`,
 						}}
 						charSet="UTF-8"
 					/>

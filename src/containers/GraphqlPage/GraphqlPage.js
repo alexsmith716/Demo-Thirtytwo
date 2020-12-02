@@ -15,10 +15,6 @@ const GraphqlPage = () => {
 			<div className="container">
 				<h1 className="mt-4 mb-3">GraphiQL Page And More!</h1>
 
-        <div className="mb-5">
-          GraphiQL Page Works?????
-        </div>
-
 				<div className="mb-5">
 					<LinkTest page="https:\/\/github.com">Github</LinkTest>
 				</div>
